@@ -1,0 +1,72 @@
+Sub FIPE_API_HTTP_REST()
+    '------------------------------------------------------------------------------------
+    'Dados para fazer a requisição
+    '------------------------------------------------------------------------------------
+    
+    Dim URL As String
+    Dim objHTTP As Object
+    Dim JSONResponse As String
+    Dim jsonObj As Object
+    
+    ' URL modificada para acessar os modelos da marca específica
+    URL = "https://parallelum.com.br/fipe/api/v1/carros/marcas/59/modelos/"
+    
+    Set objHTTP = CreateObject("MSXML2.XMLHTTP")
+    
+    objHTTP.Open "GET", URL, False
+    objHTTP.Send
+    
+    If objHTTP.Status <> 200 Then
+        MsgBox "Ocorreu um erro ao acessar a API. Status: " & objHTTP.Status
+        Exit Sub
+    End If
+    
+    JSONResponse = objHTTP.ResponseText
+    
+    ' Verificar se houve erro ao analisar o JSON
+    On Error Resume Next
+    Set jsonObj = JsonConverter.ParseJson(JSONResponse)
+    On Error GoTo 0
+    
+    Debug.Print JSONResponse
+    
+    If jsonObj Is Nothing Then
+        MsgBox "Ocorreu um erro ao analisar o JSON."
+        Exit Sub
+    End If
+    
+    '------------------------------------------------------------------------------------
+    'Escolha a planilha que irá receber os dados da API
+    '------------------------------------------------------------------------------------
+    Dim planilha As Worksheet
+    Set planilha = ThisWorkbook.Sheets("RetornoAPI")
+    
+    ' Defina a linha inicial para começar a escrever os dados
+    Dim linha As Integer
+    linha = 1 ' Cabeçalho na primeira linha
+    
+    ' Escreva os cabeçalhos das colunas
+    Dim coluna As Integer
+    coluna = 1
+    
+    ' Iterar sobre as chaves do primeiro modelo para obter os cabeçalhos
+    For Each key In jsonObj("modelos")(1).Keys
+        planilha.Cells(1, coluna).Value = key
+        coluna = coluna + 1
+    Next key
+    
+    ' Defina a linha para começar a escrever os dados
+    linha = 2
+    
+    ' Escreva os dados nas colunas
+    For Each modelo In jsonObj("modelos")
+        coluna = 1
+        For Each key In modelo.Keys
+            planilha.Cells(linha, coluna).Value = modelo(key)
+            coluna = coluna + 1
+        Next key
+        linha = linha + 1
+    Next modelo
+
+End Sub
+
